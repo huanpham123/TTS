@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Text-to-Speech Tiếng Việt</title>
+</head>
+<body>
+  <h1>Text-to-Speech Tiếng Việt</h1>
+  <textarea id="textInput" rows="5" cols="60" placeholder="Nhập văn bản tiếng Việt..."></textarea><br>
+  <button onclick="playTTS()">Phát âm thanh</button>
+  <audio id="audioPlayer" controls></audio>
+
+  <script>
+    async function playTTS() {
+      const text = document.getElementById('textInput').value.trim();
+      if (!text) return alert('Vui lòng nhập văn bản!');
+      const resp = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      if (!resp.ok) {
+        const error = await resp.json();
+        return alert('Lỗi: ' + (error.error || resp.statusText));
+      }
+      const blob = await resp.blob();
+      const url  = URL.createObjectURL(blob);
+      const player = document.getElementById('audioPlayer');
+      player.src = url;
+      player.play();
+    }
+  </script>
+</body>
+</html>
