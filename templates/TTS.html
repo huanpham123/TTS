@@ -2,47 +2,30 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Text-to-Speech Tiếng Việt</title>
+  <title>Text to Speech (TTS)</title>
   <style>
-    body { font-family: Arial; max-width:800px; margin:20px auto; text-align:center; }
-    textarea { width:100%; padding:10px; border-radius:5px; border:1px solid #ccc; }
-    button { background:#4CAF50; color:#fff; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; }
-    button:hover { background:#45a049; }
-    audio { margin-top:20px; width:100%; }
-    #loading { display:none; color:#666; margin:10px 0; }
+    body { font-family: sans-serif; text-align: center; padding: 40px; }
+    input, button { padding: 10px; font-size: 18px; margin: 5px; width: 80%; }
   </style>
 </head>
 <body>
-  <h1>Text-to-Speech Tiếng Việt</h1>
-  <textarea id="txt" rows="5" placeholder="Nhập văn bản..."></textarea><br>
-  <button onclick="play()">Phát âm thanh</button>
-  <div id="loading">Đang xử lý…</div>
-  <audio id="aud" controls></audio>
+  <h1>Chuyển Văn Bản thành Giọng Nói</h1>
+  <input id="text" type="text" placeholder="Nhập nội dung..." />
+  <br />
+  <button onclick="playAudio()">Phát giọng nói</button>
+  <br />
+  <audio id="player" controls></audio>
 
   <script>
-    async function play(){
-      const txt = document.getElementById('txt').value.trim();
-      if(!txt){ alert('Nhập văn bản!'); return; }
-      const aud = document.getElementById('aud');
-      const ld  = document.getElementById('loading');
-      ld.style.display = 'block';
-      aud.style.display = 'none';
-      try {
-        const res = await fetch(`/api/tts?text=${encodeURIComponent(txt)}`);
-        if(!res.ok) throw new Error(res.statusText);
-        const blob = await res.blob();
-        aud.src = URL.createObjectURL(blob);
-        aud.style.display = 'block';
-        await aud.play();
-      } catch(e){
-        alert('Lỗi: '+e.message);
-      } finally {
-        ld.style.display = 'none';
-      }
+    async function playAudio() {
+      const text = document.getElementById("text").value;
+      const player = document.getElementById("player");
+      if (!text) return alert("Vui lòng nhập văn bản!");
+
+      const url = `/api/tts?text=${encodeURIComponent(text)}`;
+      player.src = url;
+      player.play();
     }
-    document.getElementById('txt')
-      .addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); play(); } });
   </script>
 </body>
 </html>
