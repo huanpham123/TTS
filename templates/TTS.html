@@ -1,97 +1,48 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Text-to-Speech Tiếng Việt</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-      text-align: center;
-    }
-    textarea {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    #audioPlayer {
-      width: 100%;
-      margin-top: 20px;
-    }
-    .loading {
-      display: none;
-      margin: 10px 0;
-      color: #666;
-    }
+    body { font-family: Arial; max-width:800px; margin:20px auto; text-align:center; }
+    textarea { width:100%; padding:10px; border-radius:5px; border:1px solid #ccc; }
+    button { background:#4CAF50; color:#fff; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; }
+    button:hover { background:#45a049; }
+    audio { margin-top:20px; width:100%; }
+    #loading { display:none; color:#666; margin:10px 0; }
   </style>
 </head>
 <body>
   <h1>Text-to-Speech Tiếng Việt</h1>
-  <textarea id="textInput" rows="5" placeholder="Nhập văn bản tiếng Việt..."></textarea><br>
-  <button onclick="playTTS()">Phát âm thanh</button>
-  <div id="loading" class="loading">Đang xử lý...</div>
-  <audio id="audioPlayer" controls></audio>
+  <textarea id="txt" rows="5" placeholder="Nhập văn bản..."></textarea><br>
+  <button onclick="play()">Phát âm thanh</button>
+  <div id="loading">Đang xử lý…</div>
+  <audio id="aud" controls></audio>
 
   <script>
-  async function playTTS() {
-    const text = document.getElementById('textInput').value.trim();
-    if(!text) {
-      alert('Vui lòng nhập văn bản!');
-      return;
-    }
-
-    const player = document.getElementById('audioPlayer');
-    const loading = document.getElementById('loading');
-    
-    try {
-      loading.style.display = 'block';
-      player.style.display = 'none';
-      
-      const resp = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
-      
-      if(!resp.ok) {
-        throw new Error(`Lỗi server: ${resp.status}`);
+    async function play(){
+      const txt = document.getElementById('txt').value.trim();
+      if(!txt){ alert('Nhập văn bản!'); return; }
+      const aud = document.getElementById('aud');
+      const ld  = document.getElementById('loading');
+      ld.style.display = 'block';
+      aud.style.display = 'none';
+      try {
+        const res = await fetch(`/api/tts?text=${encodeURIComponent(txt)}`);
+        if(!res.ok) throw new Error(res.statusText);
+        const blob = await res.blob();
+        aud.src = URL.createObjectURL(blob);
+        aud.style.display = 'block';
+        await aud.play();
+      } catch(e){
+        alert('Lỗi: '+e.message);
+      } finally {
+        ld.style.display = 'none';
       }
-      
-      const blob = await resp.blob();
-      const url = URL.createObjectURL(blob);
-      
-      player.src = url;
-      player.style.display = 'block';
-      player.play();
-      
-    } catch (error) {
-      console.error('Error:', error);
-      alert(error.message);
-    } finally {
-      loading.style.display = 'none';
     }
-  }
-  
-  // Cho phép nhấn Enter để phát âm thanh
-  document.getElementById('textInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      playTTS();
-    }
-  });
+    document.getElementById('txt')
+      .addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); play(); } });
   </script>
 </body>
 </html>
