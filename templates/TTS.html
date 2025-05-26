@@ -1,31 +1,99 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <title>Text to Speech (TTS)</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text-to-Speech Tiếng Việt</title>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 40px; }
-    input, button { padding: 10px; font-size: 18px; margin: 5px; width: 80%; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #audioPlayer {
+      width: 100%;
+      margin-top: 20px;
+    }
+    .loading {
+      display: none;
+      margin: 10px 0;
+      color: #666;
+    }
   </style>
 </head>
 <body>
-  <h1>Chuyển Văn Bản thành Giọng Nói</h1>
-  <input id="text" type="text" placeholder="Nhập nội dung..." />
-  <br />
-  <button onclick="playAudio()">Phát giọng nói</button>
-  <br />
-  <audio id="player" controls></audio>
+  <h1>Text-to-Speech Tiếng Việt</h1>
+  <textarea id="textInput" rows="5" placeholder="Nhập văn bản tiếng Việt..."></textarea><br>
+  <button onclick="playTTS()">Phát âm thanh</button>
+  <div id="loading" class="loading">Đang xử lý...</div>
+  <audio id="audioPlayer" controls></audio>
 
   <script>
-    async function playAudio() {
-      const text = document.getElementById("text").value;
-      const player = document.getElementById("player");
-      if (!text) return alert("Vui lòng nhập văn bản!");
-
-      const url = `/api/tts?text=${encodeURIComponent(text)}`;
-      player.src = url;
-      player.play();
+  async function playTTS() {
+    const text = document.getElementById('textInput').value.trim();
+    if(!text) {
+      alert('Vui lòng nhập văn bản!');
+      return;
     }
+
+    const player = document.getElementById('audioPlayer');
+    const loading = document.getElementById('loading');
+
+    try {
+      loading.style.display = 'block';
+      player.style.display = 'none'; // Ẩn player cũ
+
+      // Sử dụng GET request cho Flask API
+      const resp = await fetch(`/api/tts?text=${encodeURIComponent(text)}`); // Đã có / ở đầu
+
+      if(!resp.ok) {
+        const errorData = await resp.json().catch(() => ({ message: `Lỗi server: ${resp.status}` }));
+        throw new Error(errorData.message || `Lỗi server: ${resp.status}`);
+      }
+
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+
+      player.src = url;
+      player.style.display = 'block';
+      player.play();
+
+    } catch (error) {
+      console.error('Error:', error);
+      alert(error.message);
+    } finally {
+      loading.style.display = 'none';
+    }
+  }
+
+  // Cho phép nhấn Enter để phát âm thanh
+  document.getElementById('textInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { // Thêm !e.shiftKey để cho phép xuống dòng bằng Shift+Enter
+      e.preventDefault();
+      playTTS();
+    }
+  });
   </script>
 </body>
 </html>
