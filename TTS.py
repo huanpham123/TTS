@@ -1,38 +1,25 @@
-from flask import Flask, request, send_file, jsonify, render_template
-from gtts import gTTS
 import io
-from flask_cors import CORS
+from gtts import gTTS
+from flask import Response, request, render_template
 
-app = Flask(__name__, template_folder='../templates')
-CORS(app)
+def handler(request, context):
+    # Nếu GET không có text => trả về giao diện HTML đơn giản
+    if request.method == 'GET' and not request.args.get('text'):
+        return render_template("TTS.html")
 
-@app.route('/', methods=['GET'])
-def index():
-    # Khi truy cập root, redirect về trang HTML
-    return render_template('TTS.html')
-
-@app.route('/api/tts', methods=['GET', 'POST'])
-def tts():
-    if request.method == 'POST':
+    # Lấy nội dung text từ query hoặc JSON
+    text = request.args.get('text', '')
+    if not text and request.method == 'POST':
         data = request.get_json(silent=True) or {}
-        text = data.get('text') or request.form.get('text', '')
-    else:
-        text = request.args.get('text', '')
-    if not text:
-        return jsonify({'error': 'Missing text parameter'}), 400
+        text = data.get('text', '')
 
-    # Sinh MP3
+    if not text:
+        return Response("Thiếu tham số 'text'", status=400)
+
+    # Sinh ra MP3 từ văn bản
     buf = io.BytesIO()
-    tts = gTTS(text=text, lang='vi', slow=False)
+    tts = gTTS(text=text, lang='vi')
     tts.write_to_fp(buf)
     buf.seek(0)
-    return send_file(
-        buf,
-        mimetype='audio/mpeg',
-        as_attachment=False,
-        download_name='speech.mp3'
-    )
 
-# Entry point cho Vercel
-def handler(request, context):
-    return app(request.environ, start_response=context.start_response)
+    return Response(buf.read(), mimetype='audio/mpeg')
