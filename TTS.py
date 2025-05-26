@@ -10,28 +10,26 @@ def index():
 
 @app.route('/api/tts', methods=['POST', 'GET'])
 def api_tts():
+    # Lấy text (POST JSON hoặc GET ?text=)
     if request.method == 'POST':
         data = request.get_json()
-        if not data or 'text' not in data:
-            return jsonify({'error': 'Thiếu trường text'}), 400
-        text = data['text']
+        text = data.get('text','') if data else ''
     else:
-        text = request.args.get('text', '')
-        if not text:
-            return jsonify({'error': 'Thiếu tham số text'}), 400
+        text = request.args.get('text','')
+    if not text:
+        return jsonify({'error':'Thiếu tham số text'}),400
 
-    # Chuyển văn bản thành giọng nói tiếng Việt
+    # Tạo MP3 với gTTS
     tts = gTTS(text=text, lang='vi')
     buf = io.BytesIO()
     tts.write_to_fp(buf)
     buf.seek(0)
 
-    return send_file(
-        buf,
-        mimetype='audio/mpeg',
-        as_attachment=False,
-        download_name='speech.mp3'
-    )
+    # Trả trực tiếp MP3
+    return send_file(buf,
+                     mimetype='audio/mpeg',
+                     as_attachment=False,
+                     download_name='speech.mp3')
 
-if __name__ == '__main__':
+if __name__=='__main__':
     app.run(debug=True)
