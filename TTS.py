@@ -1,3 +1,4 @@
+# app.py
 from flask import Flask, request, send_file, jsonify, render_template
 from gtts import gTTS
 import io
@@ -6,61 +7,57 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 app = Flask(__name__, template_folder='templates')
 
-# Configure logging
+# Cấu hình logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Fix for Vercel proxy
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
-# CORS middleware
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', '*')
-    response.headers.add('Access-Control-Allow-Methods', '*')
-    return response
-
 @app.route('/')
-def home():
-    return render_template('index.html')
+def index():
+    return render_template('TTS.html')
 
-@app.route('/api/tts', methods=['GET'])
+@app.route('/api/tts', methods=['GET', 'POST'])
 def text_to_speech():
     try:
-        text = request.args.get('text', '').strip()
-        
+        # Nhận văn bản từ cả GET và POST
+        if request.method == 'POST':
+            if request.is_json:
+                data = request.get_json()
+                text = data.get('text', '')
+            else:
+                text = request.form.get('text', '')
+        else:
+            text = request.args.get('text', '')
+
         if not text:
             logger.warning("Empty text request")
             return jsonify({'error': 'Missing text parameter'}), 400
-        
-        if len(text) > 500:
-            text = text[:500]  # Limit to 500 characters
-            logger.warning("Text truncated to 500 chars")
 
-        logger.info(f"Processing TTS for text: {text[:50]}...")
-        
-        # Generate speech
+        logger.info(f"Processing text: {text[:100]}...")  # Log first 100 chars
+
+        # Tạo file âm thanh với gTTS
         tts = gTTS(text=text, lang='vi', slow=False)
         audio_buffer = io.BytesIO()
         tts.write_to_fp(audio_buffer)
         audio_buffer.seek(0)
-        
-        logger.info("Audio generated successfully")
-        
-        return send_file(
+
+        # Trả về file âm thanh
+        response = send_file(
             audio_buffer,
             mimetype='audio/mpeg',
             as_attachment=False,
             download_name='speech.mp3'
         )
         
+        # Thêm headers cho CORS nếu cần
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+
     except Exception as e:
-        logger.error(f"Error in TTS generation: {str(e)}")
+        logger.error(f"Error processing TTS request: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
-# Required for Vercel
-application = app
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
