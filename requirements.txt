@@ -1,4 +1,4 @@
 Flask
 requests
 gTTS
-Flask-Cors
+
